@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+.DS_Store
+models/xgb_model.json
+models/feature_meta.pkl
+models/shap_summary.png
+models/shap_beeswarm.png
+models/confusion_matrix.png
+data/credit_risk_dataset.csv
