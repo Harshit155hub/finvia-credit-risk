@@ -1,6 +1,32 @@
 # Finvia Credit Risk API
 
-Predictive ML pipeline for estimating the probability that a business will default on an invoice or loan. Built with XGBoost, SHAP, and FastAPI, deployable via Docker.
+A machine learning-powered API that predicts the probability of default for small businesses based on financial and behavioral data.
+
+This project simulates a real-world fintech credit risk system where decisions must be both accurate and explainable. Along with prediction, the API returns the key factors influencing risk using SHAP, making it useful for analysts and underwriting teams.
+
+---
+
+## Why I Built This
+
+Traditional credit scoring systems often act as black boxes. I wanted to build a system that not only predicts risk but also explains the reasoning behind it.
+
+Through this project, I explored:
+
+* Real-world credit risk modeling concepts
+* Handling imbalanced datasets
+* Feature engineering using financial logic
+* Making ML models interpretable using SHAP
+
+---
+
+## Tech Stack
+
+* Python
+* FastAPI
+* XGBoost
+* SHAP
+* Docker
+* Pandas, NumPy, Scikit-learn
 
 ---
 
@@ -41,27 +67,31 @@ python train.py
 ```
 
 Training outputs saved to `models/`:
-- `xgb_model.json`
-- `feature_meta.pkl`
-- `shap_summary.png`
-- `shap_beeswarm.png`
-- `confusion_matrix.png`
+
+* `xgb_model.json`
+* `feature_meta.pkl`
+* `shap_summary.png`
+* `shap_beeswarm.png`
+* `confusion_matrix.png`
 
 ---
 
 ## Running the API
 
 **Locally:**
+
 ```bash
 uvicorn app.main:app --reload
 ```
 
 **Docker:**
+
 ```bash
 docker-compose up --build
 ```
 
-API docs available at `http://localhost:8000/docs`
+API docs available at:
+http://localhost:8000/docs
 
 ---
 
@@ -90,6 +120,7 @@ curl -X POST http://localhost:8000/predict \
 ```
 
 **Response:**
+
 ```json
 {
   "default_probability": 0.3741,
@@ -108,32 +139,48 @@ curl -X POST http://localhost:8000/predict \
 
 ## Feature Engineering
 
-Five derived features were added on top of the raw inputs:
+Five derived features were created to improve model performance:
 
-| Feature | Formula |
-|---|---|
-| `revenue_per_invoice` | `annual_revenue / num_invoices_12m` |
-| `debt_coverage_ratio` | `operating_cash_flow / debt_to_equity` |
-| `overdue_severity` | `pct_overdue_invoices × avg_days_overdue` |
-| `credit_health_score` | `credit_score / credit_utilization` |
-| `payment_risk_index` | `(late_payments + disputes) / years_in_business` |
+| Feature               | Formula                                                      |
+| --------------------- | ------------------------------------------------------------ |
+| `revenue_per_invoice` | `annual_revenue / num_invoices_12m`                          |
+| `debt_coverage_ratio` | `operating_cash_flow / debt_to_equity`                       |
+| `overdue_severity`    | `pct_overdue_invoices × avg_days_overdue`                    |
+| `credit_health_score` | `credit_score / credit_utilization`                          |
+| `payment_risk_index`  | `(num_late_payments + payment_disputes) / years_in_business` |
 
-These were motivated by standard credit underwriting logic — a business with high overdue % *and* long days outstanding is much riskier than either metric alone.
+These features are based on financial reasoning. For example, a business with both a high percentage of overdue invoices and long overdue durations is significantly riskier than considering either factor alone.
 
 ---
 
 ## Model Selection
 
-I tested logistic regression, random forest, and XGBoost on the same train/val split. XGBoost consistently won on PR-AUC, which matters more than ROC-AUC on this imbalanced dataset (~18% default rate). Key hyperparameters:
+Multiple models were tested, including logistic regression, random forest, and XGBoost. XGBoost performed the best based on PR-AUC, which is more suitable for imbalanced datasets (~5% default rate).
 
-- `n_estimators=400`, `max_depth=5`, `learning_rate=0.05`
-- `scale_pos_weight` set to the negative/positive class ratio to handle imbalance
-- L1+L2 regularisation to prevent overfitting on the engineered features
+Key configuration:
 
-5-fold stratified CV ROC-AUC: **~0.89**
+* `n_estimators = 400`
+* `max_depth = 5`
+* `learning_rate = 0.05`
+* `scale_pos_weight` used to handle class imbalance
+* L1 and L2 regularization to reduce overfitting
+
+5-fold stratified cross-validation ROC-AUC: **~0.74**
 
 ---
 
 ## Explainability
 
-SHAP TreeExplainer is used at inference time. Each prediction returns the top 5 features driving that specific risk score — both direction and magnitude. This lets downstream teams (underwriters, ops) understand *why* a business was flagged rather than just that it was.
+SHAP TreeExplainer is used during inference to interpret predictions. For each request, the API returns the top contributing features along with their impact.
+
+This makes the model transparent and usable in real-world scenarios where understanding the reason behind a decision is critical.
+
+---
+
+## Future Improvements
+
+* Integrate real-world financial datasets
+* Add authentication and rate limiting to the API
+* Build a frontend dashboard for visualization
+* Deploy the system on cloud platforms
+
